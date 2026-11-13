@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050b18">
+<title>THG CLOUD VPS</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+<link rel="stylesheet" href="/css/style.css">
+<script defer src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+<script defer src="/js/app.js"></script>
+<script defer src="/js/terminal.js"></script>
+<script defer src="/js/files.js"></script>
+<script defer src="/js/processes.js"></script>
+<script defer src="/js/logs.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">THG <span>CLOUD VPS</span></div>
+    <nav id="nav">
+      <button data-view="dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Dashboard</span></button>
+      <button data-view="terminal"><svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg><span>Terminal</span></button>
+      <button data-view="files"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Files</span></button>
+      <button data-view="processes"><svg viewBox="0 0 24 24"><polyline points="3 12 7 12 10 4 14 20 17 12 21 12"/></svg><span>Processes</span></button>
+      <button data-view="logs"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><line x1="9" y1="12" x2="16" y2="12"/><line x1="9" y1="16" x2="16" y2="16"/></svg><span>Logs</span></button>
+      <button data-view="settings"><svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="18" r="2"/></svg><span>Settings</span></button>
+    </nav>
+    <div class="side-foot"><span id="who" class="muted"></span></div>
+  </aside>
+
+  <main class="content">
+    <div id="banner" class="banner" hidden></div>
+
+    <section id="view-dashboard" class="view">
+      <h1>Dashboard</h1>
+      <div class="cards" id="dash-cards"></div>
+      <h2>Recent jobs</h2>
+      <div id="dash-jobs" class="joblist"></div>
+    </section>
+
+    <section id="view-terminal" class="view term-view">
+      <div class="toolbar">
+        <span id="term-status" class="pill">connecting</span>
+        <button class="btn small" id="term-new">New shell</button>
+        <button class="btn small" id="term-reconnect">Reconnect</button>
+        <span class="spacer"></span>
+        <button class="btn small" id="font-dec" aria-label="Smaller font">A−</button>
+        <button class="btn small" id="font-inc" aria-label="Larger font">A+</button>
+      </div>
+      <div id="term"></div>
+      <div class="keybar" id="keybar">
+        <button data-seq="&#27;">Esc</button><button data-seq="&#9;">Tab</button>
+        <button id="key-ctrl" class="toggle">Ctrl</button>
+        <button data-seq="&#3;">^C</button><button data-seq="&#4;">^D</button><button data-seq="&#26;">^Z</button><button data-seq="&#12;">^L</button>
+        <button data-seq="&#27;[A">↑</button><button data-seq="&#27;[B">↓</button><button data-seq="&#27;[D">←</button><button data-seq="&#27;[C">→</button>
+      </div>
+    </section>
+
+    <section id="view-files" class="view">
+      <h1>File Manager</h1>
+      <div class="toolbar wrap">
+        <button class="btn small primary" id="f-upload">Upload files</button>
+        <button class="btn small" id="f-upload-dir">Upload folder</button>
+        <button class="btn small" id="f-mkdir">New folder</button>
+        <button class="btn small" id="f-touch">New file</button>
+        <button class="btn small" id="f-refresh">Refresh</button>
+        <input type="file" id="f-input" multiple hidden>
+        <input type="file" id="f-input-dir" webkitdirectory multiple hidden>
+      </div>
+      <div id="crumbs" class="crumbs"></div>
+      <div id="upload-progress" class="progress" hidden><div></div><span></span></div>
+      <div id="f-list" class="filelist"></div>
+    </section>
+
+    <section id="view-processes" class="view">
+      <h1>Processes</h1>
+      <form id="job-form" class="toolbar wrap">
+        <input id="job-cmd" placeholder="python app.py" required>
+        <input id="job-cwd" placeholder="/data/projects/my-project or projects/my-project" value="/data/projects">
+        <button class="btn primary small" type="submit">Run in background</button>
+      </form>
+      <p class="muted small-text">Jobs keep running when you close the browser. You can also start them from the terminal with <code>thgjob run python app.py</code>.</p>
+      <div id="job-list" class="joblist"></div>
+    </section>
+
+    <section id="view-logs" class="view logs-view">
+      <h1>Logs</h1>
+      <div class="toolbar wrap">
+        <select id="log-job"></select>
+        <span id="log-status" class="pill">idle</span>
+        <label class="check"><input type="checkbox" id="log-pause"> Pause scrolling</label>
+      </div>
+      <div id="log-panes" class="logpanes"></div>
+    </section>
+
+    <section id="view-settings" class="view">
+      <h1>Settings</h1>
+      <div class="panel"><h2>Session</h2>
+        <p>Signed in as <b id="set-user"></b>.</p>
+        <button class="btn" id="logout">Sign out</button></div>
+      <div class="panel"><h2>Terminal</h2>
+        <label class="inline">Font size <input type="number" id="set-font" min="9" max="28" value="14"></label></div>
+      <div class="panel"><h2>Storage</h2>
+        <div id="set-storage" class="muted">Loading…</div>
+        <h3>Clean up old logs</h3>
+        <p class="muted small-text">Deletes log files of <b>finished</b> jobs older than N days. Nothing is ever deleted automatically except rotating oversized logs of running jobs. Project files are never touched.</p>
+        <div class="toolbar wrap"><label class="inline">Older than <input type="number" id="clean-days" min="0" value="30"> days</label>
+        <button class="btn small" id="clean-preview">Preview</button>
+        <button class="btn small danger" id="clean-run">Delete</button></div>
+        <pre id="clean-out" class="small-pre"></pre></div>
+      <div class="panel"><h2>Limits</h2><div id="set-info" class="muted"></div></div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast" hidden></div>
+</body>
+</html>
